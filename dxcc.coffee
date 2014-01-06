@@ -1,6 +1,6 @@
 fs = require('fs')
 
-class @Dxcc
+class Dxcc
 
   get: (call) ->
     call = call.toUpperCase()
@@ -10,7 +10,7 @@ class @Dxcc
       call = call.slice(0,-1)
 
   constructor: (filename) ->
-    return Dxcc(filename) unless @ instanceof Dxcc
+    return new Dxcc(filename) unless @ instanceof Dxcc
     filename or= 'COUNTRY2.DAT'
 
     # create record object containing the data sorted by prefix
@@ -21,7 +21,16 @@ class @Dxcc
     # create array containing the current prefixes
     prefs = []
 
-    lines = fs.readFileSync(filename, encoding: 'utf8').match(/[^\r\n]+/g)
+    # read content from file
+    if fs.readFileSync?
+      content = fs.readFileSync(filename, encoding: 'utf8')
+    else if fs.read?
+      content = fs.read(filename)
+    else
+      throw 'Unable to read content from file.'
+    
+    # parse content line by line
+    lines = content.match(/[^\r\n]+/g)
     for line in lines
       # ignore comment lines
       unless /^\s*\/\//.test(line)
@@ -51,3 +60,10 @@ class @Dxcc
           prefs = []
     # create prefixes array containing all official prefixes
     @prefixes = Object.keys(prefixes)
+
+if module?.exports?
+  module.exports = Dxcc
+else if window?
+  window.Dxcc = Dxcc
+else
+  this.Dxcc = Dxcc

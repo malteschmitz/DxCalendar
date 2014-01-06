@@ -1,6 +1,6 @@
 fs = require('fs')
 
-class @Adif
+class Adif
   # escape user input for usage in an regular expression
   escapeRegExp = (string) ->
     string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1")
@@ -28,21 +28,18 @@ class @Adif
     data.lastIndex = re.lastIndex
     data
 
-  #t = '123Moep\n<adiv_ver:4>1.00<eom>Hallo'
-  #data = fields(t, 3, '<eoh>', true)
-  #console.log(data)
-  #console.log(t.slice(data.lastIndex))
-
-  # write adif fields
-  # file - the output file descriptor
+  # create adif fields
   # table - the table with the fields to write into the file
   # comment - set to true if you want to write comment field as first lines
-  text = (file, table, comment) ->
+  # returns - a string containing all the fields from the table in ADIF format
+  text = (table, comment) ->
+    content = ''
     if comment
-      fs.writeSync(file, table.comment + '\n')
+      content += table.comment + '\n'
       delete table.comment
     for key, value of table
-      fs.writeSync(file, '<' + key + ':' + value.length + '>' + value + '\n')
+      content += '<' + key + ':' + value.length + '>' + value + '\n'
+    content
 
   # Read the header and all records of given ADIF file.
   # filename - the filename of the ADIF file to read
@@ -51,10 +48,20 @@ class @Adif
     @records = []
     @header = {}
     if filename
-      content = fs.readFileSync(filename, encoding: 'utf8')
+      # read content from file
+      if fs.readFileSync?
+        content = fs.readFileSync(filename, encoding: 'ascii')
+      else if fs.read?
+        content = fs.read(filename)
+      else
+        throw "Unable to read content from file."
+
+      # parse header
       result = fields(content, 0, '<eoh>', true)
       if result.lastIndex > 0
         @header = result.record
+
+      # parse records
       loop
         result = fields(content, result.lastIndex, '<eor>')
         return @ if result.lastIndex == 0
@@ -64,19 +71,26 @@ class @Adif
 
   # Write header and all records to the given file name
   write: (filename) ->
-    # open file descriptor
-    file = fs.openSync(filename, 'w')
+    # generate header
+    content = text(@header, true)
+    content += '<eoh>\n\n'
 
-    # write header
-    text(file, @header, true)
-    fs.writeSync(file, '<eoh>\n\n')
-
-    # write records
+    # generate records
     for record in @records
-      text(file, record)
-      fs.writeSync(file, '<eor>\n\n')
+      content += text(record)
+      content += '<eor>\n\n'
 
-    # close file
-    fs.closeSync(file)
+    # write content to file
+    if fs.writeFileSync?
+      fs.writeFileSync(filename, content, encoding: 'ascii')
+    else if fs.write?
+      fs.write(filename, content, 'w')
+    else
+      throw 'Unable to write content to file.'
 
-
+if module?.exports?
+  module.exports = Adif
+else if window?
+  window.Adif = Adif
+else
+  this.Adif = Adif

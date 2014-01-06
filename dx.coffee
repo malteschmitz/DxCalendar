@@ -1,17 +1,21 @@
-adif = require('./adif')
-dxcc = require('./dxcc')
+Adif = require('./adif')
+Dxcc = require('./dxcc')
 webpage = require('webpage')
 
 
 
-log = adif.Adif('DB7BN.adi')
-# log.write('moep.adi')
-console.log(log.records[10])
+# log = Adif('DB7BN.adi')
+# r = log.records[10]
+# for k,v of r
+#   console.log(k + '\t' + v)
+#log.write('moep.adi')
 
 
 
-d = new dxcc.Dxcc
-console.log(d.get('db7bn'))
+# d = Dxcc()
+# entry = d.get('db7bn')
+# for k,v of entry
+#   console.log(k + '\t' + v)
 
 
 
